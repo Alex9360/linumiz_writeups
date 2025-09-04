@@ -4,11 +4,14 @@ Runtime Channel Selection with Thread-Safe Configuration for Zephyr Comparator A
 
 Problem description:
 
-The comparator peripheral compares analog signals from two input channels. Currently, Zephyr's comparator support uses fixed channel configurations defined in the device tree, which cannot be changed during runtime.
+The comparator peripheral compares analog signals from two input channels. Currently, Zephyr's comparator support uses fixed channel configurations
+defined in the device tree, which cannot be changed during runtime.
 
 However, many SoCs actually support runtime channel selection through hardware multiplexing capabilities. While some comparator configurations like hysteresis, polarity, and reference voltage might be fixed, the input channel selection can often be modified dynamically.
 
-The current Zephyr implementation doesn't expose this hardware capability, limiting developers to only using the channels predefined in the device tree. This means even though the hardware supports switching between different input channels during operation, the software API doesn't provide this flexibility.
+The current Zephyr implementation doesn't expose this hardware capability, limiting developers to only using the channels
+predefined in the device tree. This means even though the hardware supports switching between different input channels during operation,
+the software API doesn't provide this flexibility.
 
 This gap restricts the  applications from taking full advantage of the hardware's multiplexing features for dynamic signal comparison scenarios.
 
@@ -23,7 +26,8 @@ To add runtime channel selection support to the Zephyr comparator, I'm suggestin
 ```
 int comparator_channel_select(const struct device *dev, uint8_t channel_id);
 ```
-This function lets you choose which channel to use while in the runtime, working for both single-ended and differential modes. The channel IDs can mapped (like e.g. (0-7) are for positive inputs and (8-15) are for negative inputs), as per the hardware-specific in the driver.
+This function lets you choose which channel to use while in the runtime, working for both single-ended and differential modes.
+The channel IDs can mapped (like e.g. (0-7) are for positive inputs and (8-15) are for negative inputs), as per the hardware-specific in the driver.
 
 For differential mode, you'll call this API twice - once for the positive channel and once for the negative channel.
 
@@ -33,7 +37,8 @@ Since we're dealing with multiple threads that might try to change channels at t
 int comparator_configuration_lock(const struct device *dev);
 int comparator_configuration_unlock(const struct device *dev);
 ```
-These lock/unlock functions prevent situations where one thread's channel selection gets overwritten by another thread. When you lock the configuration, other threads won't be able to change the comparator settings until you unlock it.
+These lock/unlock functions prevent situations where one thread's channel selection gets overwritten by another thread.
+When you lock the configuration, other threads won't be able to change the comparator settings until you unlock it.
 
 This approach keeps things thread-safe while giving developers the flexibility to do runtime channel switching when they need it.
 
