@@ -4,10 +4,12 @@ Runtime Channel Selection with Thread-Safe Configuration for Zephyr Comparator A
 
 Problem description:
 
-The comparator peripheral compares analog signals from two input channels. Currently, Zephyr's comparator support uses fixed channel configurations
-defined in the device tree, which cannot be changed during runtime.
+The comparator peripheral compares analog signals from two input channels. Currently, Zephyr's comparator support uses fixed 
+channel configurations defined in the device tree, which cannot be changed during runtime.
 
-However, many SoCs actually support runtime channel selection through hardware multiplexing capabilities. While some comparator configurations like hysteresis, polarity, and reference voltage might be fixed, the input channel selection can often be modified dynamically.
+However, many SoCs actually support runtime channel selection through hardware multiplexing capabilities. While some 
+comparator configurations like hysteresis, polarity, and reference voltage might be fixed, the input channel selection can 
+often be modified dynamically.
 
 The current Zephyr implementation doesn't expose this hardware capability, limiting developers to only using the channels
 predefined in the device tree. This means even though the hardware supports switching between different input channels during operation,
@@ -17,7 +19,9 @@ This gap restricts the  applications from taking full advantage of the hardware'
 
 Proposal change(summary):
 
-This proposal introduces runtime channel selection capability for Zephyr's comparator subsystem while ensuring thread safety through a comprehensive locking mechanism. The solution provides flexible channel selection for both single-ended and differential modes with multi-thread protection.
+This proposal introduces runtime channel selection capability for Zephyr's comparator subsystem while ensuring thread 
+safety through a comprehensive locking mechanism. The solution provides flexible channel selection for both single-ended
+and differential modes with multi-thread protection.
 
 Propasal change(detailed):
 
@@ -27,7 +31,7 @@ To add runtime channel selection support to the Zephyr comparator, I'm suggestin
 int comparator_channel_select(const struct device *dev, uint8_t channel_id);
 ```
 This function lets you choose which channel to use while in the runtime, working for both single-ended and differential modes.
-The channel IDs can mapped (like e.g. (0-7) are for positive inputs and (8-15) are for negative inputs), as per the hardware-specific in the driver.
+The channel IDs can mapped (like e.g. (0-7) are for positive inputs and (8-15) are for negative inputs), as per the hardware-specification in the driver.
 
 For differential mode, you'll call this API twice - once for the positive channel and once for the negative channel.
 
