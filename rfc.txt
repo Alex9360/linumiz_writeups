@@ -1,0 +1,114 @@
+Title:
+
+Runtime Channel Selection with Thread-Safe Configuration for Zephyr Comparator API.
+
+Problem description:
+
+The comparator peripheral compares analog signals from two input channels. Currently, Zephyr's comparator support uses fixed channel configurations defined in the device tree, which cannot be changed during runtime.
+
+However, many SoCs actually support runtime channel selection through hardware multiplexing capabilities. While some comparator configurations like hysteresis, polarity, and reference voltage might be fixed, the input channel selection can often be modified dynamically.
+
+The current Zephyr implementation doesn't expose this hardware capability, limiting developers to only using the channels predefined in the device tree. This means even though the hardware supports switching between different input channels during operation, the software API doesn't provide this flexibility.
+
+This gap restricts the  applications from taking full advantage of the hardware's multiplexing features for dynamic signal comparison scenarios.
+
+Proposal change(summary):
+
+This proposal introduces runtime channel selection capability for Zephyr's comparator subsystem while ensuring thread safety through a comprehensive locking mechanism. The solution provides flexible channel selection for both single-ended and differential modes with multi-thread protection.
+
+Propasal change(detailed):
+
+To add runtime channel selection support to the Zephyr comparator, I'm suggesting a new API:
+
+```
+int comparator_channel_select(const struct device *dev, uint8_t channel_id);
+```
+This function lets you choose which channel to use while in the runtime, working for both single-ended and differential modes. The channel IDs can mapped (like e.g. (0-7) are for positive inputs and (8-15) are for negative inputs), as per the hardware-specific in the driver.
+
+For differential mode, you'll call this API twice - once for the positive channel and once for the negative channel.
+
+Since we're dealing with multiple threads that might try to change channels at the same time, I'm also adding thread-safe configuration locking:
+
+```
+int comparator_configuration_lock(const struct device *dev);
+int comparator_configuration_unlock(const struct device *dev);
+```
+These lock/unlock functions prevent situations where one thread's channel selection gets overwritten by another thread. When you lock the configuration, other threads won't be able to change the comparator settings until you unlock it.
+
+This approach keeps things thread-safe while giving developers the flexibility to do runtime channel switching when they need it.
+
+
+/**
+ * @brief Select comparator channel at runtime
+ *
+ * @param dev Comparator device
+ * @param channel_id Channel ID to select
+ *
+ * @retval 0 Successful
+ * @retval -errno code Failure
+ * @retval -ENOSYS If not implemented by driver
+ */
+__syscall int comparator_select_channel(const struct device *dev, uint8_t channel_id);
+
+static inline int z_impl_comparator_select_channel(const struct device *dev, uint8_t channel_id)
+{
+	const struct comparator_driver_api *api =
+		(const struct comparator_driver_api *)dev->api;
+	
+	if (api->select_channel == NULL) {
+		return -ENOSYS;
+	}
+
+	return DEVICE_API_GET(comparator, dev)->select_channel(dev, channel_id);
+
+}
+
+/**
+ * @brief Lock comparator for exclusive access
+ *
+ * @param dev Comparator device
+ *
+ * @retval 0 Successful
+ * @retval -errno code Failure
+ * @retval -ENOSYS If not implemented by driver
+ *
+ * @note Always pair with comparator_unlock()
+ */
+__syscall int comparator_configuration_lock(const struct device *dev);
+
+static inline int z_impl_comparator_configuration_lock(const struct device *dev)
+{
+	const struct comparator_driver_api *api =
+		(const struct comparator_driver_api *)dev->api;
+	
+	if (api->lock == NULL) {
+		return -ENOSYS;
+	}
+	
+        return DEVICE_API_GET(comparator, dev)->lock(dev);
+
+}
+
+/**
+ * @brief Unlock comparator after exclusive access
+ *
+ * @param dev Comparator device
+ *
+ * @retval 0 Successful
+ * @retval -errno code Failure
+ * @retval -ENOSYS If not implemented by driver
+ */
+__syscall int comparator_configuration_unlock(const struct device *dev);
+
+static inline int z_impl_comparator_configuration_unlock(const struct device *dev)
+{
+	const struct comparator_driver_api *api =
+		(const struct comparator_driver_api *)dev->api;
+	
+	if (api->unlock == NULL) {
+		return -ENOSYS;
+	}
+	
+        return DEVICE_API_GET(comparator, dev)->unlock(dev);
+
+}
