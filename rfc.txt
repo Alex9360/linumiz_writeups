@@ -141,6 +141,7 @@ uint8_t negative_channel_id;
 /* The flag may indicates the mode of the comparator
 uint8_t flag;
 };
+
 API prototype may be
 
 int comparator_channel_setup( const struct device *dev, const struct channel_cfg *cfg)
