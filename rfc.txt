@@ -145,3 +145,7 @@ uint8_t flag;
 API prototype may be
 
 int comparator_channel_setup( const struct device *dev, const struct channel_cfg *cfg)
+
+or
+
+int comparator_channel_setup( const struct device *dev, uint8_t positive_channel, uint8_t negative_channel, uint8_t flag);
