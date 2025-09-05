@@ -133,11 +133,13 @@ Problem: 2
 
 struct channel_cfg {
 /*positive channel number*/
-int positive_channel_id;
+uint8_t positive_channel_id;
+
 /*negative channel number*/
-int negative_channel_id;
+uint8_t negative_channel_id;
+
 /* The flag may indicates the mode of the comparator
-int flag;
+uint8_t flag;
 };
 API prototype may be
 
