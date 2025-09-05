@@ -121,18 +121,24 @@ static inline int z_impl_comparator_configuration_unlock(const struct device *de
         return DEVICE_API_GET(comparator, dev)->unlock(dev);
 
 }
-/* New appraoch */
 
-In this for the problem 1: (best approach as of now)
+APPROACH:
 
-mutex which is locked in one thread cannot be claimed by another thread. So current thread only can unlock it.
-For channel setup function, inside the k_mutex structure there will be member called owner which is used to identify
-the thread which locked the mutex, which can be checked at the channel setup api and sets up the channel.
+this for the problem 1: (how lock and unlock protect the channel_setup or other configuration from other thread access)
 
-Problem: 2
+mutex which is locked in one thread cannot be claimed by another thread(inside the lock api). So current thread only can unlock it.
+For channel setup function, inside the k_mutex structure there is a member called owner which is used to store the identifier of
+the thread which locked the mutex, which can be checked at the channel setup api (e.g. mutex,owner == k_current_get()) and sets up the channel.
+
+Problem: 2 (Singel parameter for channel selection is enough?) --It will conflict the single mode approach.
+
+Another approaches:
+Approach 1:
 
 int comparator_channel_setup(const struct device *dev, uint8_t postive_channel_id, uint8_t negative_channel_id )
---Mark the unnessecary param as -1 based on the mode going to select
+--Mark the unnessecary param as -1 based on the mode going to select.
+
+Approach 2:
 
 struct channel_cfg {
 /*positive channel number*/
@@ -145,11 +151,16 @@ uint8_t negative_channel_id;
 uint8_t flag;
 };
 
-API prototype may be
-
 int comparator_channel_setup( const struct device *dev, const struct channel_cfg *cfg)
+(This approach is already requested by someone in comparator API introduction, Which was rejected at the time because he only asks for nrf. Now this applicable to all the vendors.
+link:
+https://github.com/zephyrproject-rtos/zephyr/pull/63094/files/cbc4050d39bda229273b8b0df384522e484bc7b7#diff-59f3e37905b4fd89638aa848bda993f3af7af4dc95febd76aae5311d46a87e3c
 
 or
+Approach 3:
 
 int comparator_channel_setup( const struct device *dev, uint8_t positive_channel, uint8_t negative_channel, uint8_t flag);
 
+positive_channel -- positive channel id
+negative_channel -- negative channel id
+flag			 -- Indicates the mode (single_pos, single_neg, differential)
