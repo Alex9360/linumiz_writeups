@@ -121,3 +121,25 @@ static inline int z_impl_comparator_configuration_unlock(const struct device *de
         return DEVICE_API_GET(comparator, dev)->unlock(dev);
 
 }
+/* New appraoch */
+
+In this for the problem 1: (best approach as of now)
+
+mutex which is in lock cannot claimed by another thread which is already locked in the current thread. So current thread only can unlock it.
+So during lock we can call the mutex lock. which should be unlocked by same thread untill no other thread wont disturb.
+For channel setup function, inside the k_mutex structure there will be member called owner which used to store the address of thread control block. which can be checked at the channel setup api adn sets up the channel.
+During unlock it will check the owner and then only unlock it, if correct thread is called.
+
+Problem: 2
+
+struct channel_cfg {
+/*positive channel number*/
+int positive_channel_id;
+/*negative channel number*/
+int negative_channel_id;
+/* The flag may indicates the mode of the comparator
+int flag;
+};
+API prototype may be
+
+int comparator_channel_setup( const struct device *dev, const struct channel_cfg *cfg)
