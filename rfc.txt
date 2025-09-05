@@ -131,6 +131,9 @@ During unlock it will check the owner and then only unlock it, if correct thread
 
 Problem: 2
 
+int comparator_channel_setup(const struct device *dev, uint8_t postive_channel_id, uint8_t negative_channel_id )
+--Mark the unnessecary param as -1 based on the mode going to select
+
 struct channel_cfg {
 /*positive channel number*/
 uint8_t positive_channel_id;
@@ -149,3 +152,4 @@ int comparator_channel_setup( const struct device *dev, const struct channel_cfg
 or
 
 int comparator_channel_setup( const struct device *dev, uint8_t positive_channel, uint8_t negative_channel, uint8_t flag);
+
