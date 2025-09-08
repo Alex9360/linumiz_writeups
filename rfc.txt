@@ -130,13 +130,11 @@ mutex which is locked in one thread cannot be claimed by another thread(inside t
 For channel setup function, inside the k_mutex structure there is a member called owner which is used to store the identifier of
 the thread which locked the mutex, which can be checked at the channel setup api (e.g. mutex.owner == k_current_get()) and sets up the channel.
 
-Approach using lockcount:
+Approach using lockcount:(new approach without accessing the kernel objects)
 
 As from the above, mutex which is locked by one thread cannot claimed by another thread. so in that lock function locks
-the mutex and it will unlock only by calling the unlock function in the same thread. Between this inside the setup
-function we can relock the mutex so the lock count will increase by 1 without blocking it(using K_NO_WAIT) this should be 
-unlocked at the function itself (in the same thread). If another thread calls the setup function and it tries to re-lock 
-the mutex in setup will fail. because this mutex owns by the another thread. It returns the errno.
+the mutex and it will unlock only by calling the unlock function using the same thread. Between this inside the setup
+function we can relock(calling mutex_lock again) the mutex so the lock count will increase by 1 without blocking it(using K_NO_WAIT) this should be unlocked at the function itself(setup function in the same thread). If another thread calls the setup function and it tries to re-lock the mutex in setup will fail, because this mutex owns by the another thread. It returns the errno(EBUSY).
 
 Problem: 2 (Single parameter for channel selection is enough?) --It will conflict the single mode approach.
 
